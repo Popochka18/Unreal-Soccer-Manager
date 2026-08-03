@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The native core on all three platforms. ADR-0005: GCC and Clang only, so
+  # Windows uses the ClangCL toolset rather than MSVC.
+  # ---------------------------------------------------------------------------
+  core:
+    name: core (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, name: linux-gcc, preset: ci }
+          - { os: macos-latest, name: macos-clang, preset: ci }
+          - { os: windows-latest, name: windows-clangcl, preset: windows }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        if: matrix.os != 'windows-latest'
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      # ADR-0003: dependencies are fetched by URL and verified by SHA256, so a
+      # clean build needs the network. Cache the downloads, not the builds — a
+      # cached build directory would hide a configure-time hash mismatch.
+      - name: Cache fetched dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pitchforge-deps
+          key: deps-${{ matrix.name }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Configure, build and test
+        env:
+          FETCHCONTENT_BASE_DIR: ~/.cache/pitchforge-deps
+        run: cmake --workflow --preset ${{ matrix.preset }}
+
+      - name: Record the compiler for the determinism record
+        shell: bash
+        run: |
+          echo "::group::toolchain"
+          cmake --version
+          echo "::endgroup::"
+
+  # ---------------------------------------------------------------------------
+  # §11: ASAN + UBSAN green is part of the Definition of Done.
+  # ---------------------------------------------------------------------------
+  sanitizers:
+    name: sanitizers (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, ubsan]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+      - run: cmake --workflow --preset ${{ matrix.preset }}
+
+  # ---------------------------------------------------------------------------
+  # §6. The grep guard runs from M0. The cross-OS golden hash comparison joins
+  # it at M2, when there are goldens to compare.
+  # ---------------------------------------------------------------------------
+  determinism:
+    name: determinism
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Banned-construct guard
+        run: ./tools/determinism-guard.sh
+
+      - name: Cross-OS golden replay comparison
+        run: |
+          if [ -z "$(find tests/golden -type f -name '*.hash' 2>/dev/null)" ]; then
+            echo "NOT-VERIFIED: no golden replays exist yet. This job becomes a"
+            echo "real cross-OS hash comparison at M2 (see docs/status.md)."
+            exit 0
+          fi
+          echo "Golden replays present but the comparison harness is not wired up."
+          echo "Refusing to report a pass for a check that did not run."
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # §9. Typecheck, lint, test, build — plus the guard that the generated IPC
+  # client still matches the contract.
+  # ---------------------------------------------------------------------------
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # Runs before typecheck: a stale generated client would otherwise fail
+      # typecheck with a confusing error instead of an actionable one.
+      - name: IPC client matches the contract
+        run: pnpm ipc:check
+
+      - run: pnpm -r typecheck
+      - run: pnpm lint
+      - run: pnpm -r test
+      - run: pnpm -r build
+
+  # ---------------------------------------------------------------------------
+  # §5/§14: the pack compiler validates the data pack and fails on any asset
+  # whose licence field is `unknown`. Lands at M1.
+  # ---------------------------------------------------------------------------
+  pack:
+    name: pack validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate the base data pack
+        run: |
+          if [ ! -e tools/packc ] && [ ! -d tools/packc ]; then
+            echo "NOT-VERIFIED: /tools/packc does not exist yet. Lands at M1."
+            exit 0
+          fi
+          echo "packc exists but this job was never wired up. Failing rather than"
+          echo "silently reporting a pass."
+          exit 1

@@ -1,0 +1,30 @@
+[package]
+name = "pitchforge-shell"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.77"
+description = "PitchForge desktop shell. Launcher and bridge only — no game logic."
+publish = false
+
+[lib]
+name = "pitchforge_shell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+# CLAUDE.md §9: "Rust side is a launcher and a bridge — no logic."
+#
+# Dependencies added here need a reason that survives that sentence. The server
+# is a separate native process reached over loopback HTTP/WebSocket; this crate
+# must never gain a SQLite driver, a game type, or a copy of a rule.
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

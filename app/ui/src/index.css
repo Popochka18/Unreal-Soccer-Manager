@@ -1,0 +1,33 @@
+/* Only token references. No literal colours, sizes or spacings below (§9). */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--size-md);
+    /* This UI is dense data, not a landing page: no page-level scrolling, and
+       no font smoothing tricks that make small text muddier than it needs to be. */
+    overflow: hidden;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-focusRing);
+    outline-offset: 1px;
+}
+
+/* Numbers align in columns; proportional digits in a table are unreadable. */
+.numeric {
+    font-family: var(--font-numeric);
+    font-variant-numeric: tabular-nums;
+}

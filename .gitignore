@@ -1,0 +1,36 @@
+build/
+out/
+dist/
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+
+# Rust / Tauri
+target/
+app/tauri/target/
+
+# Compiled artefacts of the data pack. Sources are tracked; world.db is not (§5.1).
+*.db
+*.db-wal
+*.db-shm
+data/packs/**/compiled/
+
+# Content-addressed asset store: derived, never committed (§3, §10).
+.assetstore/
+
+# Soak / bench output
+docs/soak/**/*.csv
+*.perf
+*.trace
+
+# UE5 (deferred to M7, ADR-0002) — ignored ahead of time so a local editor run
+# cannot accidentally commit derived content.
+ue5/**/Binaries/
+ue5/**/Intermediate/
+ue5/**/Saved/
+ue5/**/DerivedDataCache/
+
+.DS_Store
+.vscode/
+.idea/
+compile_commands.json

@@ -1,0 +1,56 @@
+{
+  "id": "pitchforge.default",
+  "name": "PitchForge Default",
+  "colorScheme": "dark",
+
+  "color": {
+    "bg": "#0e1116",
+    "bgRaised": "#161b22",
+    "bgSunken": "#090c10",
+    "bgHover": "#1c232c",
+    "bgSelected": "#1f2b3d",
+    "border": "#2a323d",
+    "borderStrong": "#3d4754",
+    "text": "#e6edf3",
+    "textMuted": "#8b949e",
+    "textFaint": "#5c6570",
+    "accent": "#3b82f6",
+    "accentText": "#ffffff",
+    "positive": "#3fb950",
+    "warning": "#d29922",
+    "negative": "#f85149",
+    "focusRing": "#58a6ff"
+  },
+
+  "attributeRamp": [
+    { "atLeast": 0.0, "color": "#6e2f2f" },
+    { "atLeast": 0.25, "color": "#8a5a2b" },
+    { "atLeast": 0.45, "color": "#8a7f2b" },
+    { "atLeast": 0.65, "color": "#4a7c3f" },
+    { "atLeast": 0.85, "color": "#2f8a4f" }
+  ],
+
+  "space": { "0": 0, "1": 2, "2": 4, "3": 6, "4": 8, "5": 12, "6": 16, "7": 24, "8": 32 },
+
+  "font": {
+    "ui": "\"Inter\", \"Segoe UI\", system-ui, sans-serif",
+    "numeric": "\"IBM Plex Mono\", ui-monospace, monospace"
+  },
+
+  "fontSize": { "xs": 11, "sm": 12, "md": 13, "lg": 15, "xl": 18, "xxl": 24 },
+
+  "density": {
+    "rowHeight": 24,
+    "rowHeightCompact": 20,
+    "headerHeight": 28,
+    "cellPaddingX": 6
+  },
+
+  "radius": { "sm": 2, "md": 4, "lg": 6 },
+
+  "motion": {
+    "instantMs": 0,
+    "fastMs": 80,
+    "normalMs": 160
+  }
+}

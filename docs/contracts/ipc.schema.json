@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pitchforge.local/contracts/ipc.schema.json",
+  "title": "PitchForge IPC contract",
+  "description": "Source of truth for the server<->UI boundary (CLAUDE.md §9). Both the TypeScript client in /app/ipc and the server-side handlers are generated from this file. Edit this, never the generated output. Use the /api command.",
+
+  "contractVersion": 0,
+
+  "transport": {
+    "commands": "loopback HTTP",
+    "streams": "WebSocket",
+    "encoding": "MessagePack",
+    "limits": {
+      "maxRowsPerResponse": 2000,
+      "maxObjectDepth": 3,
+      "unboundedArraysRequireCursor": true
+    }
+  },
+
+  "endpoints": {},
+
+  "streams": {},
+
+  "notes": [
+    "M0: the contract is empty by design. The server does not exist until M3; inventing endpoint shapes before there is a server to serve them would be a contract we cannot honour.",
+    "Version negotiation is the one thing that must exist from the start: a client and server that disagree on contractVersion must refuse to talk rather than silently misinterpret a payload."
+  ]
+}

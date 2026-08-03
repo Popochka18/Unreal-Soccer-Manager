@@ -1,0 +1,11 @@
+packages:
+  - 'ui'
+  - 'ipc'
+  - 'design'
+
+# pnpm blocks postinstall scripts unless a package is allowlisted here. Keep
+# this list minimal and justified: each entry is arbitrary code running at
+# install time. esbuild's postinstall links its prebuilt platform binary, which
+# vite and vitest cannot run without.
+allowBuilds:
+  esbuild: true

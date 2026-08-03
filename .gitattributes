@@ -1,0 +1,17 @@
+# Determinism: golden replay hashes are computed over files in this repo.
+# A CRLF checkout on Windows would change those bytes. Force LF everywhere.
+* text=auto eol=lf
+
+# Never touch these.
+*.png   binary
+*.webp  binary
+*.jpg   binary
+*.zip   binary
+*.uasset binary
+*.umap  binary
+*.db    binary
+*.blob  binary
+
+# Golden replay inputs and hashes are byte-exact fixtures.
+tests/golden/**      -text
+tests/fixtures/**    -text

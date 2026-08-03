@@ -1,0 +1,55 @@
+# /app — the UI shell
+
+CLAUDE.md §9 is the contract. pnpm workspace root.
+
+| Package | What it is |
+|---|---|
+| `ui/` | React 18 + Vite renderer. The eleven screens land at M6. |
+| `ipc/` | **Generated** typed client. Everything in its `src/` is machine-written. |
+| `design/` | Theme tokens and the shared primitives. |
+| `tauri/` | Tauri v2 desktop shell. A launcher and a bridge, nothing more. |
+
+`tauri/` is not in the §4 layout table; ADR-0002 records why it lives here.
+
+## Getting set up
+
+```bash
+cd app && pnpm install
+```
+
+Requires Node ≥22 and pnpm 11. Ubuntu's packaged `corepack` cannot launch modern pnpm —
+install it directly with `npm install -g pnpm@latest --prefix ~/.local`.
+
+## The commands CI runs
+
+```bash
+pnpm -r typecheck && pnpm lint && pnpm -r test && pnpm -r build
+```
+
+`pnpm ipc:check` is part of `pnpm -r test`. It regenerates the IPC client into memory and
+fails on any difference, which is how a hand-edit to `ipc/src/` gets caught.
+
+## Two rules that are enforced, not suggested
+
+**The UI decides nothing.** It may sort, filter and format. Every number it displays was
+computed by the server. This is §3, and it is the difference between one implementation of
+the rules and two that drift apart.
+
+**`ui/` may not call `fetch()`.** ESLint errors on it. All server traffic goes through
+`@pitchforge/ipc`, because that is the only place that knows the contract version and can
+refuse to talk to a server that disagrees.
+
+## Running without the desktop shell
+
+The UI must work in a plain browser against a running server (`pnpm dev`, port 5173).
+That is not a dev convenience — it is what keeps the Tauri layer thin enough to stay honest.
+
+## Tauri: scaffolded, not yet built
+
+`cargo check` in `app/tauri` currently fails on missing system libraries. Install them:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+```
+
+Until that runs, the shell is unverified — see `/docs/status.md`.
