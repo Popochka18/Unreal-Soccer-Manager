@@ -1,8 +1,20 @@
 # ADR-0005: One compiler family — Clang on Windows, not MSVC
 
-- **Status:** Accepted
+- **Status:** **Superseded by [ADR-0006](0006-support-msvc-with-a-dual-128-bit-path.md)**
 - **Date:** 2026-08-03
 - **Amends:** nothing explicitly; makes a §6 obligation concrete
+
+> **Superseded 2026-08-03.** MSVC is supported again. This ADR's technical analysis was
+> correct — MSVC genuinely lacks `__int128` and a constexpr route to it — and CI confirmed
+> the Clang-on-Windows premise works. What changed is the weighting: the M7 risk this ADR
+> names in its own "what would reverse this" section was judged too expensive to carry,
+> because discovering it after M2 means proving bit-equivalence against a full golden replay
+> corpus rather than in an afternoon.
+>
+> ADR-0006 resolves the divergence danger differently, by splitting on *evaluation context*
+> rather than on compiler: one portable implementation used at compile time everywhere,
+> native paths only at runtime, and a differential test proving they agree. Read this
+> document for why the risk is real; read ADR-0006 for how it is contained.
 
 ## Context
 

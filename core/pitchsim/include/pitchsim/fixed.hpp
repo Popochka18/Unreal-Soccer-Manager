@@ -18,8 +18,10 @@
 //
 // Portability: C++20 defines `>>` on a negative signed value as a floor
 // division by a power of two ([expr.shift]/3), so the arithmetic shift is
-// standard-mandated, not implementation-defined. The 128-bit intermediates are
-// exact on every supported target.
+// standard-mandated, not implementation-defined. The 128-bit intermediates live
+// in wide.hpp, which supports GCC, Clang and MSVC — see ADR-0006.
+
+#include "pitchsim/wide.hpp"
 
 #include <cstdint>
 #include <compare>
@@ -28,49 +30,8 @@ namespace pitchsim {
 
 namespace detail {
 
-#if defined(__SIZEOF_INT128__)
-
-// __int128 is a compiler extension, so -Wpedantic objects to the token. The
-// warning is correct and we want it everywhere else — suppress it for exactly
-// this declaration rather than dropping -Wpedantic from the sim warning bar.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-using wide_t = __int128;
-#pragma GCC diagnostic pop
-
-// Floor division on the 128-bit intermediate. C++ integer division truncates
-// toward zero; nudge the quotient down when the true result was negative and
-// inexact.
-constexpr wide_t floor_div_wide(wide_t n, wide_t d) noexcept
-{
-    const wide_t q = n / d;
-    const wide_t r = n % d;
-    return (r != 0 && ((r < 0) != (d < 0))) ? q - 1 : q;
-}
-
-// (a * b) >> shift, with an exact 128-bit product. Flooring.
-constexpr std::int64_t mul_shift_floor(std::int64_t a, std::int64_t b, int shift) noexcept
-{
-    const wide_t product = static_cast<wide_t>(a) * static_cast<wide_t>(b);
-    return static_cast<std::int64_t>(product >> shift);
-}
-
-// (a << shift) / b, with an exact 128-bit numerator. Flooring.
-constexpr std::int64_t shift_div_floor(std::int64_t a, std::int64_t b, int shift) noexcept
-{
-    const wide_t numerator = static_cast<wide_t>(a) << shift;
-    return static_cast<std::int64_t>(floor_div_wide(numerator, static_cast<wide_t>(b)));
-}
-
-#else
-// MSVC has no __int128, and its _mul128/_div128 intrinsics are not constexpr,
-// so supporting it means a second numeric code path plus a portable constexpr
-// fallback — roughly 150 lines of 128-bit arithmetic that would have to be
-// exactly bit-equivalent to this one, forever, or §6 breaks.
-//
-// We build Windows with clang instead. See ADR-0005.
-#error "pitchsim requires a compiler with __int128 (GCC or Clang). Windows builds use clang-cl — see docs/adr/0005-one-compiler-family.md"
-#endif
+using wide::mul_shift_floor;
+using wide::shift_div_floor;
 
 } // namespace detail
 

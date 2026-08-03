@@ -9,8 +9,8 @@ current milestone is **M0**.
 
 ## Build
 
-Native core — needs CMake ≥3.27, Ninja, and GCC or Clang ([ADR-0005](docs/adr/0005-one-compiler-family.md)
-— MSVC is not supported):
+Native core — needs CMake ≥3.27, Ninja, and GCC, Clang or MSVC on x64
+([ADR-0006](docs/adr/0006-support-msvc-with-a-dual-128-bit-path.md)):
 
 ```bash
 cmake --workflow --preset ci

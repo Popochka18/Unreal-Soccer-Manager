@@ -15,6 +15,7 @@ Skeleton. Two primitives, both fully tested, nothing else:
 | Header | What it is |
 |---|---|
 | `include/pitchsim/fixed.hpp` | `Fixed` — q16.16 in `int64`. Every number that can affect an outcome. |
+| `include/pitchsim/wide.hpp` | 128-bit intermediates. Portable at compile time, native at runtime. |
 | `include/pitchsim/rng.hpp` | `Rng` — SplitMix64, explicit state, per-purpose derived streams. |
 | `include/pitchsim/version.hpp` | Ruleset and event-stream contract versions. |
 

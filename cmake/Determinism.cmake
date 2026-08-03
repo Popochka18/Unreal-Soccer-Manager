@@ -17,9 +17,9 @@ function(_pitchforge_apply_warnings target)
     if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
         target_compile_options(${target} PRIVATE /W4 /WX)
         if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            message(FATAL_ERROR
-                "MSVC is not a supported compiler for /core (ADR-0005). "
-                "Configure with the ClangCL toolset.")
+            # Real MSVC (ADR-0006). /permissive- and /Zc:__cplusplus are not
+            # passed to clang-cl, which already conforms and warns about them.
+            target_compile_options(${target} PRIVATE /permissive- /Zc:__cplusplus)
         endif()
     else()
         target_compile_options(${target} PRIVATE
@@ -44,21 +44,32 @@ function(pitchforge_sim_target target)
     _pitchforge_apply_warnings(${target})
 
     if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-        # clang-cl. Note the absence of /fp:precise: it maps to
-        # -ffp-model=precise, and following it with -ffp-contract=off makes
-        # clang emit -Woverriding-option, which /WX turns into a build error.
-        # -ffp-contract=off is the stricter of the two and the one §6 needs, so
-        # it is the one we keep. Contraction is what actually varies between an
-        # FMA-capable and a non-FMA-capable target.
-        #
-        # -ffp-contract=off is passed last so that nothing after it can reset
-        # contraction back to a default.
-        target_compile_options(${target} PRIVATE
-            /clang:-fno-fast-math
-            /clang:-fno-vectorize
-            /clang:-fno-slp-vectorize
-            /clang:-ffp-contract=off
-        )
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            # clang-cl. Note the absence of /fp:precise: it maps to
+            # -ffp-model=precise, and following it with -ffp-contract=off makes
+            # clang emit -Woverriding-option, which /WX turns into a build
+            # error. -ffp-contract=off is the stricter of the two and the one
+            # §6 needs — contraction is what varies between an FMA-capable and
+            # a non-FMA-capable target — so it is the one we keep.
+            #
+            # -ffp-contract=off is passed last so that nothing after it can
+            # reset contraction back to a default.
+            target_compile_options(${target} PRIVATE
+                /clang:-fno-fast-math
+                /clang:-fno-vectorize
+                /clang:-fno-slp-vectorize
+                /clang:-ffp-contract=off
+            )
+        else()
+            # Real MSVC (ADR-0006). /fp:precise is the default but is stated
+            # explicitly so a future /fp:fast in a toolchain file cannot win by
+            # accident. /fp:contract is deliberately *not* passed. /Qvec- turns
+            # off the auto-vectorizer, which §6 bans in sim TUs.
+            target_compile_options(${target} PRIVATE
+                /fp:precise
+                /Qvec-
+            )
+        endif()
     else()
         target_compile_options(${target} PRIVATE
             -fno-fast-math

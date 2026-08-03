@@ -31,7 +31,14 @@ Listed here so they are easy to review and revert.
 - [ ] **`RngStream` is append-only but nothing enforces it.** Inserting a value in the middle
       renumbers every stream after it and invalidates every save and golden replay. Worth a
       static assertion on the enum's size, or a test pinning each value.
-- [ ] **Windows-on-ARM.** ADR-0005 targets clang-cl on x64. ARM64 is untested and unclaimed.
+- [ ] **Windows-on-ARM.** ADR-0006 supports GCC, Clang and MSVC on x64. ARM64 is untested
+      and unclaimed; `wide.hpp` `#error`s there rather than degrading silently. MSVC on ARM64
+      would need the portable path at runtime too, since `_mul128` is x64-only — which the
+      current structure already supports, so this is mostly a CI question.
+- [ ] **Extend `test_wide.cpp` whenever `Fixed` gains an operation.** ADR-0006 makes the
+      compile-time path different code from the runtime path on *every* platform, so a bug in
+      the portable implementation is invisible to normal testing unless the differential test
+      covers the operand range where it shows up.
 
 ## Tooling
 

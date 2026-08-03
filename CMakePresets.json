@@ -25,18 +25,32 @@
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     },
     {
-      "name": "windows",
+      "name": "windows-base",
+      "hidden": true,
       "inherits": "base",
-      "displayName": "Windows x64, clang-cl (ADR-0005)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
-      },
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-clang",
+      "inherits": "windows-base",
+      "displayName": "Windows x64, clang-cl",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "inherits": "windows-base",
+      "displayName": "Windows x64, MSVC (ADR-0006)",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
       }
     },
     {
@@ -65,7 +79,8 @@
   "buildPresets": [
     { "name": "debug", "configurePreset": "debug" },
     { "name": "release", "configurePreset": "release" },
-    { "name": "windows", "configurePreset": "windows" },
+    { "name": "windows-clang", "configurePreset": "windows-clang" },
+    { "name": "windows-msvc", "configurePreset": "windows-msvc" },
     { "name": "asan", "configurePreset": "asan" },
     { "name": "ubsan", "configurePreset": "ubsan" }
   ],
@@ -78,7 +93,8 @@
     },
     { "name": "debug", "inherits": "base", "configurePreset": "debug" },
     { "name": "release", "inherits": "base", "configurePreset": "release" },
-    { "name": "windows", "inherits": "base", "configurePreset": "windows" },
+    { "name": "windows-clang", "inherits": "base", "configurePreset": "windows-clang" },
+    { "name": "windows-msvc", "inherits": "base", "configurePreset": "windows-msvc" },
     { "name": "asan", "inherits": "base", "configurePreset": "asan" },
     { "name": "ubsan", "inherits": "base", "configurePreset": "ubsan" }
   ],
@@ -93,12 +109,21 @@
       ]
     },
     {
-      "name": "windows",
-      "displayName": "Configure, build and test on Windows via ClangCL",
+      "name": "windows-clang",
+      "displayName": "Configure, build and test on Windows with clang-cl",
       "steps": [
-        { "type": "configure", "name": "windows" },
-        { "type": "build", "name": "windows" },
-        { "type": "test", "name": "windows" }
+        { "type": "configure", "name": "windows-clang" },
+        { "type": "build", "name": "windows-clang" },
+        { "type": "test", "name": "windows-clang" }
+      ]
+    },
+    {
+      "name": "windows-msvc",
+      "displayName": "Configure, build and test on Windows with MSVC",
+      "steps": [
+        { "type": "configure", "name": "windows-msvc" },
+        { "type": "build", "name": "windows-msvc" },
+        { "type": "test", "name": "windows-msvc" }
       ]
     },
     {
