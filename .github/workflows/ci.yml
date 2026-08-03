@@ -24,7 +24,12 @@ jobs:
         include:
           - { os: ubuntu-latest, name: linux-gcc, preset: ci }
           - { os: macos-latest, name: macos-clang, preset: ci }
-          - { os: windows-latest, name: windows-clangcl, preset: windows }
+          - { os: windows-latest, name: windows-clangcl, preset: windows-clang }
+          # ADR-0006: MSVC is supported again, so it has to be verified. The
+          # differential test in test_wide.cpp is what makes this leg load
+          # bearing — it is the only thing comparing MSVC's _mul128 path
+          # against the portable one.
+          - { os: windows-latest, name: windows-msvc, preset: windows-msvc }
     steps:
       - uses: actions/checkout@v4
 

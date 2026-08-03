@@ -7,6 +7,7 @@ include(Catch)
 add_executable(pitchsim_tests
     test_fixed.cpp
     test_rng.cpp
+    test_wide.cpp
 )
 
 target_link_libraries(pitchsim_tests PRIVATE

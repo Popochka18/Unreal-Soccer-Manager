@@ -60,11 +60,12 @@ sudo apt install libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev l
    invariants that matter — associativity bounds, round-trip error, monotonicity of the floor
    under composition — are asserted at specific values, not over ranges. A property test
    harness should land before `libpitchsim` grows arithmetic that depends on them.
-3. **Three compilers now, and they will drift.** GCC 15.2, Apple Clang and Clang 20.1.8 each
-   get their own codegen. ADR-0005 narrowed this from four to three by dropping MSVC, but
-   every additional compiler is a permanent tax on §6. The `-ffp-contract` conflict found on
-   day one is the mild version of this class of problem; the severe version is a flag that
-   silently differs rather than erroring.
+3. **Four compilers now, and they will drift.** GCC 15.2, Apple Clang, Clang 20.1.8 and MSVC
+   each get their own codegen — ADR-0006 restored MSVC to remove an M7 risk. Every compiler
+   is a permanent tax on §6. The `-ffp-contract` conflict found on day one is the mild
+   version of this class of problem; the severe version is a flag that silently differs
+   rather than erroring. `test_wide.cpp` covers the numeric core, but nothing yet compares
+   *compiled output* across compilers — that arrives with golden replays at M2.
 
 ## Milestone ledger
 
