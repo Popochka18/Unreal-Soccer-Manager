@@ -44,23 +44,31 @@ function(pitchforge_sim_target target)
     _pitchforge_apply_warnings(${target})
 
     if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-        # clang-cl: /fp:precise blocks contraction and reassociation; the
-        # remaining pins go through the Clang driver directly.
+        # clang-cl. Note the absence of /fp:precise: it maps to
+        # -ffp-model=precise, and following it with -ffp-contract=off makes
+        # clang emit -Woverriding-option, which /WX turns into a build error.
+        # -ffp-contract=off is the stricter of the two and the one §6 needs, so
+        # it is the one we keep. Contraction is what actually varies between an
+        # FMA-capable and a non-FMA-capable target.
+        #
+        # -ffp-contract=off is passed last so that nothing after it can reset
+        # contraction back to a default.
         target_compile_options(${target} PRIVATE
-            /fp:precise
-            /clang:-ffp-contract=off
             /clang:-fno-fast-math
             /clang:-fno-vectorize
             /clang:-fno-slp-vectorize
+            /clang:-ffp-contract=off
         )
     else()
         target_compile_options(${target} PRIVATE
-            -ffp-contract=off            # no FMA fusion (§6)
             -fno-fast-math
             -fno-unsafe-math-optimizations
             -fno-associative-math
             -frounding-math
             -fno-strict-overflow         # signed overflow must not be assumed away
+            # Last, so nothing above can reset contraction to a default. GCC's
+            # default is `fast`, so this flag is doing real work, not decoration.
+            -ffp-contract=off            # no FMA fusion (§6)
         )
         # Auto-vectorisation is banned in sim TUs (§6): the vector and scalar
         # tails of a reduction can round differently, and the decision depends
