@@ -71,9 +71,12 @@ std::vector<std::int64_t> interesting_operands()
 // comfortably inside that.
 constexpr std::int64_t kMulBound = 1LL << 39;
 
+#if defined(PITCHSIM_HAS_NATIVE_DIV128)
 // (a << 16) / b must fit in int64. With |b| >= 1 the worst case is |a| << 16,
-// so bound a to 2^40.
+// so bound a to 2^40. Only referenced by the divide-oracle comparisons, which
+// do not exist where a native 128-bit divide cannot link.
 constexpr std::int64_t kDivBound = 1LL << 40;
+#endif
 
 } // namespace
 
