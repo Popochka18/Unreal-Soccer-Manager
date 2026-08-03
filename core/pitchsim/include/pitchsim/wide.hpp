@@ -153,6 +153,18 @@ using native_u128 = unsigned __int128;
 
 #define PITCHSIM_HAS_NATIVE_INT128 1
 
+// 128-bit *division* is a compiler-rt/libgcc call (__divti3), not an
+// instruction. That runtime library is not linked by default when targeting the
+// MSVC ABI, so on clang-cl a runtime 128-bit divide fails at link with an
+// undefined symbol. Multiplication is unaffected: a 64x64->128 widening
+// multiply compiles to a single instruction with no libcall.
+//
+// This is only visible when the divide is *not* constant-folded, which is why
+// it went unnoticed until test_wide.cpp started calling it with runtime values.
+#if !defined(_MSC_VER)
+#define PITCHSIM_HAS_NATIVE_DIV128 1
+#endif
+
 #elif defined(_MSC_VER) && defined(_M_X64)
 
 #define PITCHSIM_HAS_MSVC_INTRINSICS 1
@@ -224,6 +236,9 @@ using native_u128 = unsigned __int128;
     return static_cast<std::int64_t>(product >> shift);
 }
 
+#if defined(PITCHSIM_HAS_NATIVE_DIV128)
+/// Native 128-bit division. Used as the differential test's oracle for the
+/// portable divide; the dispatcher below never calls it — see shift_div_floor.
 [[nodiscard]] constexpr std::int64_t shift_div_floor_native(std::int64_t a, std::int64_t b,
                                                             int shift) noexcept
 {
@@ -241,6 +256,7 @@ using native_u128 = unsigned __int128;
     }
     return static_cast<std::int64_t>(quotient);
 }
+#endif
 
 #elif defined(PITCHSIM_HAS_MSVC_INTRINSICS)
 
@@ -253,22 +269,29 @@ using native_u128 = unsigned __int128;
                                      (static_cast<std::uint64_t>(hi) << (64 - shift)));
 }
 
-// No native divide. _div128 raises SIGFPE on quotient overflow rather than
-// returning a value, which turns a precondition violation into a process kill
-// instead of a testable wrong answer. Division is also far colder than
-// multiplication in the tick loop, so the portable path is the better trade.
-[[nodiscard]] inline std::int64_t shift_div_floor_native(std::int64_t a, std::int64_t b,
-                                                         int shift) noexcept
-{
-    return shift_div_floor_portable(a, b, shift);
-}
-
 #endif
 
 // ---------------------------------------------------------------------------
-// Dispatch. Compile time always takes the portable path, on every compiler, so
-// a constant-folded value cannot differ from the same expression evaluated at
-// runtime on another platform. test_wide.cpp proves the two agree.
+// Dispatch.
+//
+// Multiply: portable at compile time, native at runtime. The native path is a
+// single widening-multiply instruction and this is the hottest operation in the
+// engine, so the §7 budget justifies the second path.
+//
+// Divide: portable everywhere, at compile time AND at runtime, on every
+// platform. Three reasons, in order of weight:
+//
+//   1. Native 128-bit division is a runtime-library call (__divti3), not an
+//      instruction, and that library is not linked when targeting the MSVC ABI.
+//   2. MSVC's _div128 raises SIGFPE on quotient overflow rather than returning,
+//      turning a precondition violation into a process kill instead of a
+//      testable wrong answer.
+//   3. Division is far colder than multiplication in the tick loop, so the
+//      portable path costs little and removes an entire axis of platform
+//      variance — which is worth more to §6 than the cycles are worth to §7.
+//
+// shift_div_floor_native still exists on platforms that can link it, purely as
+// the differential test's oracle. Nothing in the engine calls it.
 // ---------------------------------------------------------------------------
 
 [[nodiscard]] constexpr std::int64_t mul_shift_floor(std::int64_t a, std::int64_t b, int shift) noexcept
@@ -281,9 +304,6 @@ using native_u128 = unsigned __int128;
 
 [[nodiscard]] constexpr std::int64_t shift_div_floor(std::int64_t a, std::int64_t b, int shift) noexcept
 {
-    if (!std::is_constant_evaluated()) {
-        return shift_div_floor_native(a, b, shift);
-    }
     return shift_div_floor_portable(a, b, shift);
 }
 
