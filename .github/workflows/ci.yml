@@ -128,6 +128,43 @@ jobs:
       - run: pnpm -r build
 
   # ---------------------------------------------------------------------------
+  # §9: the Tauri desktop shell. Linux only for now — it is a launcher and a
+  # bridge, so cross-platform packaging is an M6 concern, not an M0 one.
+  # ---------------------------------------------------------------------------
+  shell:
+    name: tauri shell
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/tauri
+    steps:
+      - uses: actions/checkout@v4
+
+      # WebKitGTK and its friends are not on the runner image. Only the four
+      # that are actually missing on a stock Ubuntu — the rest of Tauri's
+      # documented list ships preinstalled.
+      - name: Install WebKitGTK system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/tauri
+
+      # No check that the committed icons match tools/mkicon.py: Pillow's PNG
+      # encoder is not byte-stable across versions, so a diff-based check would
+      # fail on a Pillow upgrade rather than on a real problem. `cargo build`
+      # already fails if an icon is missing, which is the case that matters.
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo build
+
+  # ---------------------------------------------------------------------------
   # §5/§14: the pack compiler validates the data pack and fails on any asset
   # whose licence field is `unknown`. Lands at M1.
   # ---------------------------------------------------------------------------

@@ -18,21 +18,23 @@ Nothing below is marked PASS that was not executed. Items that were not run say 
 | `/app` tests | PASS | `pnpm -r test` — 3 vitest tests pass; `ipc:check` confirms the generated client matches the contract. |
 | `/app` build | PASS | `pnpm -r build` — vite 6.4.3, 32 modules, 147.42 kB (47.59 kB gzip). |
 | Determinism guard | PASS | `./tools/determinism-guard.sh` clean; verified it *fails* on a planted `double` and ignores the same word in a comment. |
-| Tauri shell builds | **NOT-VERIFIED** | `cargo check` fails at `gio-sys`: `gio-2.0.pc` missing. Needs `apt` and therefore sudo. Crate is scaffolded, never compiled. |
+| Tauri shell builds | PASS | `cargo build` links `target/debug/pitchforge-shell` (ELF x86-64) in 1 m 02 s. `cargo clippy --all-targets -- -D warnings` clean. Rust 1.97.1, Tauri 2.11.5. |
 | Windows / macOS core | **NOT-VERIFIED** | Only ever built with GCC 15.2 on Linux in this session. The first CI run is the verification. ADR-0005 puts Windows on clang-cl. |
 | CI runs green | **NOT-VERIFIED** | `.github/workflows/ci.yml` is written but has never executed — no remote is configured. |
 | ADR-0001 written | PASS | `docs/adr/0001-architecture.md`, plus 0002–0005. |
 
 ### Verdict
 
-**M0 is not complete.** The build and test story is real and verified on Linux; the
-cross-platform and CI claims are not. M0 closes when the first CI run is green and
-`cargo check` passes in `app/tauri`.
+**M0 is not complete.** Everything is verified on Linux — all three targets now build,
+including the desktop shell. What remains is entirely cross-platform: Windows and macOS have
+never been compiled, and CI has never run. **M0 closes on the first green CI run.**
 
-### To unblock the Tauri leg
+### Local prerequisites (Ubuntu 26.04)
+
+Four packages beyond a stock install; the rest of Tauri's documented list ships preinstalled:
 
 ```bash
-sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+sudo apt install libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
 ## Top three risks carried into M1
