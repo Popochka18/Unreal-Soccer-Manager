@@ -29,8 +29,31 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Ninja
-        if: matrix.os != 'windows-latest'
         uses: seanmiddleditch/gha-setup-ninja@v5
+
+      # Windows needs the MSVC environment for the SDK headers and import
+      # libraries — clang-cl targets the MSVC ABI, it does not replace the SDK.
+      # This action locates whatever Visual Studio or Build Tools the image
+      # ships, which is deliberately version-agnostic: pinning a generator to
+      # "Visual Studio 17 2022" is what broke this job when the runner image
+      # moved on.
+      - name: Set up the MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Toolchain inventory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "--- clang-cl ---"
+          (Get-Command clang-cl -ErrorAction SilentlyContinue)?.Source ?? "clang-cl NOT ON PATH"
+          clang-cl --version 2>&1 | Select-Object -First 3
+          Write-Host "--- visual studio instances ---"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vswhere) { & $vswhere -all -products * -property catalog_productLineVersion }
+          else { Write-Host "vswhere not present" }
 
       # ADR-0003: dependencies are fetched by URL and verified by SHA256, so a
       # clean build needs the network. Cache the downloads, not the builds — a
@@ -126,6 +149,43 @@ jobs:
       - run: pnpm lint
       - run: pnpm -r test
       - run: pnpm -r build
+
+  # ---------------------------------------------------------------------------
+  # §9: the Tauri desktop shell. Linux only for now — it is a launcher and a
+  # bridge, so cross-platform packaging is an M6 concern, not an M0 one.
+  # ---------------------------------------------------------------------------
+  shell:
+    name: tauri shell
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/tauri
+    steps:
+      - uses: actions/checkout@v4
+
+      # WebKitGTK and its friends are not on the runner image. Only the four
+      # that are actually missing on a stock Ubuntu — the rest of Tauri's
+      # documented list ships preinstalled.
+      - name: Install WebKitGTK system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/tauri
+
+      # No check that the committed icons match tools/mkicon.py: Pillow's PNG
+      # encoder is not byte-stable across versions, so a diff-based check would
+      # fail on a Pillow upgrade rather than on a real problem. `cargo build`
+      # already fails if an icon is missing, which is the case that matters.
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo build
 
   # ---------------------------------------------------------------------------
   # §5/§14: the pack compiler validates the data pack and fails on any asset
