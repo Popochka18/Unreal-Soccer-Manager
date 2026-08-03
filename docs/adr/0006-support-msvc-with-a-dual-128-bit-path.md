@@ -67,10 +67,40 @@ Option 3, in `core/pitchsim/include/pitchsim/wide.hpp`.
 Supported compilers: **GCC, Clang, and MSVC on x64.** A compiler matching none of these
 fails with an `#error` rather than silently selecting a degraded path.
 
-`_div128` is deliberately unused even on MSVC. It raises `SIGFPE` on quotient overflow
-rather than returning a value, which converts a precondition violation into a process kill
-instead of a testable wrong answer — and division is far colder than multiplication in the
-tick loop, so the portable path is the better trade there.
+### Division is portable on every platform, including Linux
+
+Multiplication splits portable/native as described. **Division does not** — the portable
+path runs everywhere, at compile time and at runtime, on all four compilers.
+
+This was not the original design. The first implementation used `__int128` division at
+runtime on GCC and Clang, and CI rejected it:
+
+```
+lld-link: error: undefined symbol: __divti3
+```
+
+128-bit division is a compiler-rt/libgcc *call*, not an instruction, and that runtime
+library is not linked when targeting the MSVC ABI. Multiplication is unaffected — a
+64×64→128 widening multiply is a single instruction with no libcall.
+
+The find is worth more than the fix. That path had been in the tree since M0 and passed the
+Windows CI leg, because every divide in the existing tests was constant-folded. It would
+have failed the first time the engine performed a fixed-point division with runtime
+operands. The differential test surfaced it only because it calls the native functions in a
+loop with values the optimiser cannot fold.
+
+Three reasons the portable divide is now used everywhere, in order of weight:
+
+1. It has no runtime-library dependency, so it cannot fail to link on any target.
+2. MSVC's `_div128` raises `SIGFPE` on quotient overflow rather than returning, converting
+   a precondition violation into a process kill instead of a testable wrong answer.
+3. Division is far colder than multiplication in the tick loop, so the portable path costs
+   little — and removing an entire axis of platform variance is worth more to §6 than the
+   cycles are worth to §7.
+
+`shift_div_floor_native` still exists where it can link, purely as the differential test's
+oracle. Nothing in the engine calls it. Verified: `nm -u libpitchsim.a` reports zero
+`__divti3` references.
 
 ### The differential test is the load-bearing part
 

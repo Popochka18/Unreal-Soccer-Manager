@@ -100,6 +100,14 @@ TEST_CASE("portable and native multiply agree on edge operands", "[wide][determi
     }
 }
 
+#if defined(PITCHSIM_HAS_NATIVE_DIV128)
+
+// The divide oracle only exists where a native 128-bit division links. On the
+// MSVC ABI it does not — __divti3 lives in a runtime library that is not linked
+// there — which is precisely why the engine uses the portable divide on every
+// platform. That makes this a check of one implementation used everywhere, so
+// verifying it on Linux verifies it everywhere.
+
 TEST_CASE("portable and native divide agree on edge operands", "[wide][determinism]")
 {
     const std::vector<std::int64_t> operands = interesting_operands();
@@ -122,6 +130,8 @@ TEST_CASE("portable and native divide agree on edge operands", "[wide][determini
     }
 }
 
+#endif // PITCHSIM_HAS_NATIVE_DIV128
+
 TEST_CASE("portable and native agree over randomized operands", "[wide][determinism]")
 {
     // Our own RNG, so a failure is reproducible from the seed alone.
@@ -138,6 +148,7 @@ TEST_CASE("portable and native agree over randomized operands", "[wide][determin
         REQUIRE(portable == native);
     }
 
+#if defined(PITCHSIM_HAS_NATIVE_DIV128)
     for (int i = 0; i < 200000; ++i) {
         const std::int64_t a = rng.next_range(-kDivBound, kDivBound);
         std::int64_t b = rng.next_range(-1000000, 1000000);
@@ -151,6 +162,7 @@ TEST_CASE("portable and native agree over randomized operands", "[wide][determin
         INFO("iteration " << i << ", a = " << a << ", b = " << b);
         REQUIRE(portable == native);
     }
+#endif
 }
 
 TEST_CASE("the constexpr and runtime paths agree", "[wide][determinism]")
