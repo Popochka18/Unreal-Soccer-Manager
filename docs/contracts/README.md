@@ -6,7 +6,7 @@ compatibility test is a build-breaking offence.
 | Contract | Source of truth | Current version | State |
 |---|---|---|---|
 | IPC | [`ipc.schema.json`](ipc.schema.json) | 0 | declared, no endpoints (server lands M3) |
-| DB schema | [`db.md`](db.md) + `/core/db/schema/*.sql` | — | not started (M1) |
+| DB schema | [`db.md`](db.md) + `/core/db/schema/*.sql` | 2 | `strings`, geography, `person`; pack compiler pending |
 | Match event stream | [`events.md`](events.md) | 0 | not started (M2) |
 | Save format | [`save.md`](save.md) | — | not started (M3) |
 

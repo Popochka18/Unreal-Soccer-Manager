@@ -2,14 +2,32 @@
 
 CLAUDE.md §5 is the contract.
 
-## Current state (M0)
+## Current state (M1, schema version 2)
 
 The SQLite amalgamation is wired up as a target (pinned by SHA256 in
 `cmake/Dependencies.cmake`, see ADR-0003) with `SQLITE_DQS=0`,
-`SQLITE_DEFAULT_FOREIGN_KEYS=1` and extension loading compiled out. Nothing else exists yet.
+`SQLITE_DEFAULT_FOREIGN_KEYS=1` and extension loading compiled out.
 
-The schema, the migration runner and the hand-written query layer land at M1. Use the
-`/schema` command — it will not let you add a table without a migration and a compat test.
+`PitchForge::db` adds the forward-only migration runner
+(`pitchforge/db/migrate.hpp`) and the migrations in `./schema`:
+
+| Version | File | Tables |
+|---|---|---|
+| 1 | `001_strings_geography.sql` | `strings`, `nation`, `region`, `city` |
+| 2 | `002_person.sql` | `person` |
+
+Still missing: the hand-written query layer (no ORM, §3) and the pack compiler in
+`/tools/packc`, which is what turns `/data/packs/` into `world.db`. Until it exists there is
+no way to *populate* this schema outside of tests.
+
+Use the `/schema` command to change any of it — migrations are immutable once applied and the
+runner enforces that by content hash.
+
+**WAL is the opener's responsibility.** The build sets `SQLITE_DEFAULT_WAL_SYNCHRONOUS=1`,
+which selects the synchronous level *within* WAL mode — it does not select the journal mode.
+§5 requires WAL, so whoever opens a connection must issue `PRAGMA journal_mode=WAL`. The
+migration runner deliberately does not: it must work against `:memory:` in tests, where WAL
+is unavailable.
 
 ## The shape of it
 
