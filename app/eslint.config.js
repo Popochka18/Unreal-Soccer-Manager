@@ -14,6 +14,12 @@ export default tseslint.config(
       '**/*.config.js',
       '**/playwright-report/**',
       'ipc/src/generated.ts',
+      // Cargo build output. The Tauri crate is Rust and is deliberately outside
+      // the pnpm workspace (ADR-0002), but `cargo build` emits generated .js
+      // under target/, which the type-aware parser then rejects as being
+      // outside every tsconfig. CI never sees this because the `app` job does
+      // not build the crate — only a developer who has run `cargo build` does.
+      'tauri/target/**',
     ],
   },
 
